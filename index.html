@@ -211,17 +211,18 @@ input{font-family:inherit}
 const SUPABASE_URL = 'https://hpkebnjdzmwdrffrerum.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwa2Vibmpkem13ZHJmZnJlcnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4OTQ0NDksImV4cCI6MjA5NjQ3MDQ0OX0.uZYibFAq8IhCsbLvsO7c5Byq9i-oHcJCfvjL5hT2TMQ';
 
-const api = (path, opts = {}) =>
-  fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+const api = (path, opts = {}) => {
+  const sep = path.includes('?') ? '&' : '?';
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}apikey=${SUPABASE_KEY}`, {
     ...opts,
     headers: {
-      'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       ...opts.headers,
     },
   });
+};
 
 // ─── 상태 ────────────────────────────────────────────
 const TODAY = new Date();
