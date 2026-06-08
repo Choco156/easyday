@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>easyday · 부담 없는 일정관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f5f2;--surface:#fff;--surface2:#f0ede8;--border:#e8e3dc;
+  --text:#2a2420;--text2:#7a6f68;--text3:#b5aca4;
+  --green:#5a9e72;--green-bg:#edf6f1;
+  --amber:#c89a47;--amber-bg:#fdf6e8;
+  --blue:#5b8fd4;--blue-bg:#eef3fb;
+  --rose:#c97a7a;--slate:#8fa0b0;
+  --sh:0 2px 16px rgba(60,40,20,.07);--sh-sm:0 1px 6px rgba(60,40,20,.05);
+  --r:16px;--rsm:10px;--ease:.18s cubic-bezier(.4,0,.2,1);
+  --font:'Plus Jakarta Sans','Gowun Dodum',sans-serif;
+}
+.dark {
+  --bg:#1a1714;--surface:#242018;--surface2:#2e2924;--border:#3a342c;
+  --text:#f0ebe4;--text2:#a09080;--text3:#5a5048;
+  --green:#6ab882;--green-bg:#1a2e22;
+  --amber:#d4a855;--amber-bg:#2a2010;
+  --blue:#7aaae8;--blue-bg:#162030;
+  --sh:0 2px 16px rgba(0,0,0,.3);--sh-sm:0 1px 6px rgba(0,0,0,.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{cursor:pointer;border:none;background:none;font-family:inherit;color:inherit}
+input{font-family:inherit}
+
+.app-bg{position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 80% 10%,rgba(91,143,212,.07) 0%,transparent 60%),radial-gradient(ellipse 40% 50% at 10% 80%,rgba(90,158,114,.06) 0%,transparent 60%),var(--bg);pointer-events:none;z-index:0}
+.app-wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 24px;min-height:100vh;display:flex;flex-direction:column}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 0 16px;border-bottom:1px solid var(--border);gap:16px}
+.hdr-l{display:flex;align-items:center;gap:20px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));flex-shrink:0}
+.logo-txt{font-size:1.15rem;font-weight:600;letter-spacing:-.02em}
+.hdr-date{font-size:.82rem;color:var(--text2)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.btn-rescue{padding:7px 14px;border-radius:100px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:.8rem;font-weight:500;transition:all var(--ease);box-shadow:var(--sh-sm)}
+.btn-rescue:hover{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);transform:translateY(-1px);box-shadow:var(--sh)}
+.icon-btn{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text2);background:var(--surface);border:1px solid var(--border);transition:all var(--ease)}
+.icon-btn:hover,.icon-btn.active{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+
+/* sync indicator */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.err{background:var(--rose)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.app-main{flex:1;padding:24px 0 40px}
+.split{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+
+.sidebar{display:flex;flex-direction:column;gap:20px;position:sticky;top:24px}
+.inp-area{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh-sm);transition:box-shadow var(--ease),border-color var(--ease)}
+.inp-area:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(91,143,212,.12),var(--sh)}
+.main-inp{width:100%;border:none;outline:none;background:transparent;font-size:.92rem;color:var(--text);caret-color:var(--blue)}
+.main-inp::placeholder{color:var(--text3)}
+.inp-hint{margin-top:8px;padding:6px 10px;border-radius:8px;background:var(--green-bg);color:var(--green);font-size:.78rem;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.inp-sub{margin-top:10px;font-size:.72rem;color:var(--text3);line-height:1.4}
+
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh-sm)}
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.sec-ttl{font-size:.78rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text2)}
+.sec-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:100px;background:var(--surface2);font-size:.7rem;color:var(--text2);font-weight:500}
+.sec-sub{font-size:.75rem;color:var(--text3);margin-bottom:12px}
+.card-list{display:flex;flex-direction:column;gap:6px}
+.empty-st{font-size:.78rem;color:var(--text3);padding:8px 0;line-height:1.5}
+.done-div{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:.7rem;color:var(--text3)}
+.done-div::before,.done-div::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.r-card{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rsm);background:var(--surface2);transition:all var(--ease);animation:fadeUp .2s ease;position:relative}
+.r-card:hover{background:var(--border)}
+.r-card:hover .del-btn{opacity:1}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.r-status-btn{flex-shrink:0;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform var(--ease);font-size:1rem;line-height:1}
+.r-status-btn:hover{transform:scale(1.2)}
+.r-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.r-txt{font-size:.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-freq{font-size:.68rem;color:var(--text3);font-weight:500}
+.r-done .r-txt,.r-partial .r-txt{opacity:.55}
+.r-done{opacity:.7}
+
+.t-card{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rsm);background:var(--surface2);transition:all var(--ease);animation:fadeUp .2s ease}
+.t-card:hover{background:var(--border)}
+.t-card:hover .del-btn{opacity:1}
+.t-chk{flex-shrink:0;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--text3);display:flex;align-items:center;justify-content:center;transition:all var(--ease);background:var(--surface)}
+.t-chk:hover,.t-chk.chkd{border-color:var(--green)}
+.t-chk.chkd{background:var(--green-bg)}
+.t-chk-icon{font-size:.72rem;color:var(--green);font-weight:700;line-height:1}
+.t-txt{flex:1;font-size:.85rem;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-done .t-txt{text-decoration:line-through;opacity:.4}
+
+.del-btn{flex-shrink:0;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text3);opacity:0;transition:all var(--ease)}
+.del-btn:hover{color:var(--rose);background:rgba(201,122,122,.1)}
+
+.cal-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm);overflow:hidden}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px}
+.cal-m-lbl{font-size:.92rem;font-weight:600;letter-spacing:-.01em}
+.cal-nav{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text2);transition:all var(--ease)}
+.cal-nav:hover{background:var(--surface2);color:var(--text)}
+.cal-wdays{display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;margin-bottom:4px}
+.cal-wday{text-align:center;font-size:.7rem;font-weight:600;color:var(--text3);padding:4px 0;letter-spacing:.04em}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;gap:2px}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:6px;border-radius:10px;cursor:pointer;transition:all var(--ease);min-height:52px;gap:3px}
+.cal-cell.empty{cursor:default}
+.cal-cell:not(.empty):hover{background:var(--surface2)}
+.cal-day-n{font-size:.78rem;font-weight:500;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+.cal-cell.today .cal-day-n{background:var(--text);color:var(--bg)}
+.cal-cell.sel:not(.today){background:var(--blue-bg)}
+.cal-cell.sel.today .cal-day-n{background:var(--blue);color:#fff}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.cal-dot.done{background:var(--green);opacity:.5}
+.dot-more{font-size:.55rem;color:var(--text3)}
+
+.day-detail{border-top:1px solid var(--border);padding:16px 20px 20px;min-height:140px}
+.detail-hdr{margin-bottom:12px}
+.detail-date{font-size:.78rem;font-weight:600;color:var(--text2);letter-spacing:.02em}
+.cal-empty-msg{font-size:.8rem;color:var(--text3);padding:8px 0;line-height:1.5}
+.ev-list{display:flex;flex-direction:column;gap:6px}
+.ev-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rsm);background:var(--blue-bg);border:1px solid rgba(91,143,212,.15);transition:all var(--ease);cursor:grab;animation:fadeUp .2s ease}
+.ev-card:hover{transform:translateX(2px);box-shadow:var(--sh-sm)}
+.ev-card:hover .del-btn{opacity:1}
+.ev-done{opacity:.5}
+.ev-chk{flex-shrink:0;width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(91,143,212,.4);display:flex;align-items:center;justify-content:center;transition:all var(--ease);background:var(--surface)}
+.ev-chk:hover,.ev-chk.chkd{border-color:var(--green)}
+.ev-chk.chkd{background:var(--green-bg)}
+.ev-chk-icon{font-size:.72rem;color:var(--green);font-weight:700;line-height:1}
+.ev-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ev-txt{font-size:.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-done .ev-txt{text-decoration:line-through;opacity:.4}
+.ev-time{font-size:.7rem;color:var(--blue);font-weight:500}
+.ev-acts{display:flex;align-items:center;gap:4px}
+.ev-post{font-size:.68rem;color:var(--text3);padding:3px 7px;border-radius:100px;border:1px solid var(--border);background:var(--surface);transition:all var(--ease);white-space:nowrap}
+.ev-post:hover{color:var(--amber);border-color:var(--amber);background:var(--amber-bg)}
+
+.dash{display:flex;justify-content:center;padding:16px 0}
+.dash-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px 32px;box-shadow:var(--sh-sm);width:100%;max-width:640px}
+.dash-ttl{font-size:1.1rem;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.dash-sub{font-size:.8rem;color:var(--text2);margin-bottom:24px}
+.dash-list{display:flex;flex-direction:column;gap:20px}
+.dash-row{display:flex;flex-direction:column;gap:6px}
+.dash-row-info{display:flex;align-items:center;justify-content:space-between}
+.dash-row-name{font-size:.88rem;font-weight:500}
+.dash-freq{font-size:.72rem;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:100px}
+.dash-bar-wrap{display:flex;align-items:center;gap:10px}
+.dash-track{flex:1;height:8px;border-radius:100px;background:var(--surface2);overflow:hidden}
+.dash-fill{height:100%;border-radius:100px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.dash-rate{font-size:.78rem;font-weight:600;min-width:32px;text-align:right}
+.dash-log{font-size:.7rem;color:var(--text3)}
+.dash-note{margin-top:28px;padding:14px 16px;border-radius:var(--rsm);background:var(--surface2);display:flex;flex-direction:column;gap:3px;font-size:.75rem;color:var(--text2)}
+.dash-empty{text-align:center;color:var(--text2);padding:32px 0;font-size:.85rem}
+
+/* loading skeleton */
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;height:38px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.cal-cell.drag-over{background:var(--blue-bg)!important;outline:2px dashed var(--blue)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+@media(max-width:640px){.app-wrap{padding:0 16px}.hdr-date{display:none}.cal-cell{min-height:40px}.dash-inner{padding:20px 16px}.btn-rescue{font-size:.72rem;padding:6px 10px}}
+</style>
+</head>
+<body>
+<div class="app-bg"></div>
+<div class="app-wrap">
+  <header class="hdr">
+    <div class="hdr-l">
+      <div class="logo">
+        <span class="logo-dot"></span>
+        <span class="logo-txt">easyday</span>
+      </div>
+      <span class="hdr-date" id="hdr-date"></span>
+    </div>
+    <div class="hdr-r">
+      <span class="sync-dot" id="sync-dot" title="저장 상태"></span>
+      <button class="btn-rescue" onclick="rescheduleDay()" title="오늘 남은 일정을 내일로">오늘 망함 😵</button>
+      <button class="icon-btn" id="dash-btn" onclick="toggleDashboard()" title="루틴 대시보드">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="icon-btn" id="dark-btn" onclick="toggleDark()" title="다크모드">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main class="app-main" id="app-main">
+    <div class="split">
+      <aside class="sidebar">
+        <div class="inp-area"><div class="skeleton" style="height:22px;margin-bottom:8px"></div><div class="skeleton" style="height:14px;width:80%"></div></div>
+        <div class="sec"><div class="skeleton"></div></div>
+        <div class="sec"><div class="skeleton"></div></div>
+      </aside>
+      <div class="cal-panel" style="padding:20px"><div class="skeleton" style="height:300px"></div></div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+// ─── Supabase 설정 ───────────────────────────────────
+const SUPABASE_URL = 'https://hpkebnjdzmwdrffrerum.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwa2Vibmpkem13ZHJmZnJlcnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4OTQ0NDksImV4cCI6MjA5NjQ3MDQ0OX0.uZYibFAq8IhCsbLvsO7c5Byq9i-oHcJCfvjL5hT2TMQ';
+
+const api = (path, opts = {}) =>
+  fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...opts.headers,
+    },
+  });
+
+// ─── 상태 ────────────────────────────────────────────
+const TODAY = new Date();
+const todayStr = fmtDate(TODAY);
+let darkMode = false;
+let showDash = false;
+let viewYear = TODAY.getFullYear();
+let viewMonth = TODAY.getMonth();
+let selectedDate = todayStr;
+let dragId = null;
+let items = [];   // { ...item, logs: [] } 형태로 메모리에 보관
+let loading = true;
+
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateOffset(base, days) {
+  const d = new Date(base); d.setDate(d.getDate()+days); return fmtDate(d);
+}
+function nextDow(target) {
+  const d = new Date(TODAY);
+  const diff = ((target - d.getDay()) + 7) % 7 || 7;
+  d.setDate(d.getDate()+diff); return fmtDate(d);
+}
+function genId() { return crypto.randomUUID(); }
+
+// ─── Sync indicator ──────────────────────────────────
+function setSyncState(state) { // 'syncing' | 'ok' | 'err'
+  const dot = document.getElementById('sync-dot');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + state;
+  dot.title = state === 'ok' ? '저장됨' : state === 'syncing' ? '저장 중...' : '저장 실패';
+}
+
+// ─── DB 로드 ─────────────────────────────────────────
+async function loadAll() {
+  setSyncState('syncing');
+  try {
+    const [itemsRes, logsRes] = await Promise.all([
+      api('items?select=*&order=created_at.desc'),
+      api('routine_logs?select=*'),
+    ]);
+    if (!itemsRes.ok || !logsRes.ok) throw new Error('load failed');
+    const rawItems = await itemsRes.json();
+    const rawLogs  = await logsRes.json();
+
+    items = rawItems.map(it => ({
+      ...it,
+      logs: it.type === 'routine'
+        ? rawLogs.filter(l => l.routine_id === it.id).map(l => ({ d: l.date, s: l.status }))
+        : [],
+    }));
+    setSyncState('ok');
+  } catch(e) {
+    console.error(e);
+    setSyncState('err');
+    showToast('불러오기 실패. 네트워크를 확인해주세요.');
+  }
+  loading = false;
+  render();
+}
+
+// ─── 파서 ────────────────────────────────────────────
+const ROUTINE_KW = ['매일','매주','월수금','화목','주말','평일','매달','격일','루틴','반복'];
+const DAY_MAP = {'월요일':1,'화요일':2,'수요일':3,'목요일':4,'금요일':5,'토요일':6,'일요일':0};
+
+function parseInput(text) {
+  const t = text.trim();
+  for (const kw of ROUTINE_KW) {
+    if (t.includes(kw)) return { id:genId(), type:'routine', text:t, status:'none', freq:kw, logs:[] };
+  }
+  let date = null;
+  const md = t.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (md) date = `${TODAY.getFullYear()}-${md[1].padStart(2,'0')}-${md[2].padStart(2,'0')}`;
+  if (!date) for (const [kw,off] of [['오늘',0],['내일',1],['모레',2]]) { if(t.includes(kw)){date=dateOffset(todayStr,off);break;} }
+  if (!date) for (const [kw,day] of Object.entries(DAY_MAP)) { if(t.includes(kw)){date=nextDow(day);break;} }
+  if (date) {
+    const tm = t.match(/(\d{1,2})시(?:\s*(\d{1,2})분)?/);
+    const time = tm ? `${tm[1].padStart(2,'0')}:${tm[2]?tm[2].padStart(2,'0'):'00'}` : null;
+    return { id:genId(), type:'event', text:t, date, time, done:false };
+  }
+  return { id:genId(), type:'todo', text:t, done:false };
+}
+
+// ─── DB 액션 ─────────────────────────────────────────
+async function dbAddItem(item) {
+  setSyncState('syncing');
+  const { logs, ...row } = item;
+  try {
+    const res = await api('items', { method:'POST', body: JSON.stringify(row) });
+    if (!res.ok) throw new Error(await res.text());
+    setSyncState('ok');
+  } catch(e) { setSyncState('err'); showToast('저장 실패 😢'); }
+}
+
+async function dbUpdate(id, patch) {
+  setSyncState('syncing');
+  try {
+    const res = await api(`items?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(patch) });
+    if (!res.ok) throw new Error(await res.text());
+    setSyncState('ok');
+  } catch(e) { setSyncState('err'); showToast('저장 실패 😢'); }
+}
+
+async function dbDelete(id) {
+  setSyncState('syncing');
+  try {
+    await api(`items?id=eq.${id}`, { method:'DELETE' });
+    await api(`routine_logs?routine_id=eq.${id}`, { method:'DELETE' });
+    setSyncState('ok');
+  } catch(e) { setSyncState('err'); showToast('삭제 실패 😢'); }
+}
+
+async function dbUpsertLog(routineId, date, status) {
+  setSyncState('syncing');
+  try {
+    const logId = genId();
+    const res = await api('routine_logs', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ id: logId, routine_id: routineId, date, status }),
+    });
+    if (!res.ok) {
+      // fallback: PATCH existing
+      await api(`routine_logs?routine_id=eq.${routineId}&date=eq.${date}`, {
+        method: 'PATCH', body: JSON.stringify({ status }),
+      });
+    }
+    setSyncState('ok');
+  } catch(e) { setSyncState('err'); }
+}
+
+// ─── 액션 ────────────────────────────────────────────
+async function addItem(text) {
+  const item = parseInput(text);
+  items.unshift(item);
+  render();
+  await dbAddItem(item);
+  return item;
+}
+
+async function cycleRoutine(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it || it.type!=='routine') return;
+  const cyc = {none:'partial',partial:'done',done:'none'};
+  it.status = cyc[it.status];
+  it.logs = it.logs.filter(l=>l.d!==todayStr);
+  it.logs.push({d:todayStr, s:it.status});
+  render();
+  await Promise.all([
+    dbUpdate(id, { status: it.status }),
+    dbUpsertLog(id, todayStr, it.status),
+  ]);
+}
+
+async function toggleTodo(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it || it.type!=='todo') return;
+  it.done = !it.done;
+  render();
+  await dbUpdate(id, { done: it.done });
+}
+
+async function toggleEvent(id) {
+  const it = items.find(i=>i.id===id);
+  if (!it || it.type!=='event') return;
+  it.done = !it.done;
+  render();
+  await dbUpdate(id, { done: it.done });
+}
+
+async function deleteItem(id) {
+  items = items.filter(i=>i.id!==id);
+  render();
+  await dbDelete(id);
+}
+
+async function rescheduleDay() {
+  const tmrw = dateOffset(todayStr,1);
+  const toMove = items.filter(it=>it.type==='event'&&it.date===todayStr&&!it.done);
+  toMove.forEach(it=>{ it.date=tmrw; });
+  if (selectedDate===todayStr) selectedDate=tmrw;
+  render();
+  showToast('오늘 일정을 내일로 옮겼어요 ☁️');
+  for (const it of toMove) await dbUpdate(it.id, { date: tmrw });
+}
+
+async function moveEventByDay(id, offset) {
+  const it = items.find(i=>i.id===id);
+  if (!it || it.type!=='event') return;
+  it.date = dateOffset(it.date, offset);
+  render();
+  await dbUpdate(id, { date: it.date });
+}
+
+async function moveEventToDate(id, date) {
+  const it = items.find(i=>i.id===id);
+  if (!it || it.type!=='event') return;
+  it.date = date;
+  render();
+  await dbUpdate(id, { date });
+}
+
+// ─── UI 헬퍼 ─────────────────────────────────────────
+function toggleDark() {
+  darkMode = !darkMode;
+  document.documentElement.classList.toggle('dark', darkMode);
+}
+function toggleDashboard() {
+  showDash = !showDash;
+  document.getElementById('dash-btn').classList.toggle('active', showDash);
+  render();
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:100px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh);font-size:.82rem;color:var(--text2);z-index:999;transition:opacity .3s ease;pointer-events:none;white-space:nowrap';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.opacity='0'; }, 2600);
+}
+
+// ─── 렌더 ────────────────────────────────────────────
+function render() {
+  const main = document.getElementById('app-main');
+  if (showDash) {
+    main.innerHTML = renderDashboard();
+  } else {
+    main.innerHTML = `<div class="split">${renderSidebar()}${renderCalendar()}</div>`;
+    attachSidebarEvents();
+  }
+  const wds=['일','월','화','수','목','금','토'];
+  document.getElementById('hdr-date').textContent =
+    `${TODAY.getMonth()+1}월 ${TODAY.getDate()}일 ${wds[TODAY.getDay()]}요일`;
+}
+
+// ── 사이드바 ──
+const STATUS_ICON = { none:'⚪', partial:'🩶', done:'🟢' };
+
+function renderSidebar() {
+  const routines = items.filter(i=>i.type==='routine');
+  const todos    = items.filter(i=>i.type==='todo');
+  const active   = todos.filter(t=>!t.done);
+  const done     = todos.filter(t=>t.done);
+
+  return `<aside class="sidebar">
+    <div class="inp-area" id="inp-area">
+      <input class="main-inp" id="main-inp" placeholder="예: 오늘 저녁 7시 병원, 청소 매일 10분" autocomplete="off" spellcheck="false" />
+      <p class="inp-sub">날짜/시간 포함 → 캘린더 &nbsp;·&nbsp; 매일/매주 포함 → 루틴 &nbsp;·&nbsp; 나머지 → 할 일</p>
+    </div>
+    <section class="sec">
+      <div class="sec-hdr">
+        <span class="sec-ttl">루틴</span>
+        <span class="sec-badge">${routines.length}</span>
+      </div>
+      <p class="sec-sub">10분만 해도 괜찮아요 ☁️</p>
+      <div class="card-list">
+        ${routines.length===0
+          ? `<p class="empty-st">아직 루틴이 없어요.<br>'청소 매일'처럼 입력해보세요.</p>`
+          : routines.map(r => {
+              const cls = r.status==='done'?'r-done':r.status==='partial'?'r-partial':'';
+              const strike = r.status==='done'?'text-decoration:line-through;opacity:.4':'';
+              return `<div class="r-card ${cls}">
+                <button class="r-status-btn" onclick="cycleRoutine('${r.id}')">${STATUS_ICON[r.status]}</button>
+                <div class="r-body">
+                  <span class="r-txt" style="${strike}">${r.text}</span>
+                  <span class="r-freq">${r.freq}</span>
+                </div>
+                <button class="del-btn" onclick="deleteItem('${r.id}')">×</button>
+              </div>`;
+            }).join('')}
+      </div>
+    </section>
+    <section class="sec">
+      <div class="sec-hdr">
+        <span class="sec-ttl">할 일</span>
+        <span class="sec-badge">${active.length}</span>
+      </div>
+      <div class="card-list">
+        ${active.length===0&&done.length===0
+          ? `<p class="empty-st">할 일을 입력해보세요.</p>`
+          : active.map(renderTodoCard).join('')
+            + (done.length ? `<div class="done-div"><span>완료 ${done.length}개</span></div>`+done.map(renderTodoCard).join('') : '')}
+      </div>
+    </section>
+  </aside>`;
+}
+
+function renderTodoCard(t) {
+  const strike = t.done?'text-decoration:line-through;opacity:.4':'';
+  return `<div class="t-card ${t.done?'t-done':''}">
+    <button class="t-chk ${t.done?'chkd':''}" onclick="toggleTodo('${t.id}')">
+      <span class="t-chk-icon">${t.done?'✓':''}</span>
+    </button>
+    <span class="t-txt" style="${strike}">${t.text}</span>
+    <button class="del-btn" onclick="deleteItem('${t.id}')">×</button>
+  </div>`;
+}
+
+function attachSidebarEvents() {
+  const inp = document.getElementById('main-inp');
+  if (!inp) return;
+  inp.addEventListener('keydown', async e => {
+    if (e.key==='Enter' && inp.value.trim()) {
+      const text = inp.value.trim();
+      inp.value = '';
+      const item = await addItem(text);
+      const label = item.type==='routine'?'루틴으로 등록됐어요 🔁':item.type==='event'?'캘린더에 추가됐어요 📅':'할 일로 추가됐어요 ✓';
+      showToast(label);
+      document.getElementById('main-inp')?.focus();
+    }
+  });
+}
+
+// ── 캘린더 ──
+function renderCalendar() {
+  const events = items.filter(i=>i.type==='event');
+  const daysInMonth = new Date(viewYear,viewMonth+1,0).getDate();
+  const firstDay    = new Date(viewYear,viewMonth,1).getDay();
+  const toDS = d => `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  const cells = [...Array(firstDay).fill(null), ...Array.from({length:daysInMonth},(_,i)=>i+1)];
+  const gridCells = cells.map((day, idx) => {
+    if (!day) return `<div class="cal-cell empty"></div>`;
+    const ds = toDS(day);
+    const isToday = ds===todayStr;
+    const isSel   = ds===selectedDate;
+    const dayEvs  = events.filter(e=>e.date===ds);
+    const dots = dayEvs.slice(0,3).map(e=>`<span class="cal-dot ${e.done?'done':''}" title="${e.text}"></span>`).join('')
+      + (dayEvs.length>3?`<span class="dot-more">+${dayEvs.length-3}</span>`:'');
+    return `<div class="cal-cell ${isToday?'today':''} ${isSel?'sel':''}"
+      onclick="selectDate('${ds}')"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="dropOnDate('${ds}');this.classList.remove('drag-over')">
+      <span class="cal-day-n">${day}</span>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }).join('');
+
+  const selEvs = events.filter(e=>e.date===selectedDate);
+  const evDetail = selEvs.length===0
+    ? `<p class="cal-empty-msg">이날은 비어있어요. 여유롭게 쉬어가도 돼요 ☁️</p>`
+    : `<div class="ev-list">${selEvs.map(ev=>`
+        <div class="ev-card ${ev.done?'ev-done':''}" draggable="true" ondragstart="dragId='${ev.id}'">
+          <button class="ev-chk ${ev.done?'chkd':''}" onclick="toggleEvent('${ev.id}')">
+            <span class="ev-chk-icon">${ev.done?'✓':''}</span>
+          </button>
+          <div class="ev-body">
+            <span class="ev-txt">${ev.text}</span>
+            ${ev.time?`<span class="ev-time">${ev.time}</span>`:''}
+          </div>
+          <div class="ev-acts">
+            <button class="ev-post" onclick="moveEventByDay('${ev.id}',1)">+1일</button>
+            <button class="del-btn" onclick="deleteItem('${ev.id}')">×</button>
+          </div>
+        </div>`).join('')}</div>`;
+
+  return `<div class="cal-panel">
+    <div class="cal-hdr">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <span class="cal-m-lbl">${viewYear}년 ${viewMonth+1}월</span>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-wdays">${['일','월','화','수','목','금','토'].map(d=>`<div class="cal-wday">${d}</div>`).join('')}</div>
+    <div class="cal-grid">${gridCells}</div>
+    <div class="day-detail">
+      <div class="detail-hdr"><span class="detail-date">${selectedDate.replace(/-/g,'.')} 일정</span></div>
+      ${evDetail}
+    </div>
+  </div>`;
+}
+
+function selectDate(ds) { selectedDate=ds; render(); }
+function calNav(dir) {
+  viewMonth+=dir;
+  if(viewMonth<0){viewMonth=11;viewYear--;}
+  if(viewMonth>11){viewMonth=0;viewYear++;}
+  render();
+}
+function dropOnDate(ds) { if(dragId){moveEventToDate(dragId,ds);dragId=null;} }
+
+// ── 대시보드 ──
+function calcRate(r) {
+  if (!r.logs.length) return 0;
+  return Math.round(r.logs.filter(l=>l.s!=='none').length/r.logs.length*100);
+}
+const ENCORS=['오늘은 가볍게 가도 됩니다 ☁️','다음날 다시 하면 돼요 🌱','조금씩이 쌓여요 💧','완벽하지 않아도 괜찮아요 🍃','지속이 완벽함보다 낫습니다 🌙'];
+
+function renderDashboard() {
+  const routines = items.filter(i=>i.type==='routine');
+  const msg = ENCORS[new Date().getMinutes()%ENCORS.length];
+  const rows = routines.length===0
+    ? `<div class="dash-empty"><p>아직 루틴이 없어요.</p><p style="font-size:.8rem;opacity:.5;margin-top:4px">사이드바에서 '청소 매일'처럼 입력해보세요.</p></div>`
+    : `<div class="dash-list">${routines.map(r=>{
+        const rate=calcRate(r);
+        const col=rate>=70?'var(--green)':rate>=40?'var(--amber)':'var(--slate)';
+        return `<div class="dash-row">
+          <div class="dash-row-info">
+            <span class="dash-row-name">${r.text}</span>
+            <span class="dash-freq">${r.freq}</span>
+          </div>
+          <div class="dash-bar-wrap">
+            <div class="dash-track"><div class="dash-fill" style="width:${rate}%;background:${col}"></div></div>
+            <span class="dash-rate" style="color:${col}">${rate}%</span>
+          </div>
+          <p class="dash-log">${r.logs.length>0?`최근 ${r.logs.length}일 기록 · 완료+조금 ${r.logs.filter(l=>l.s!=='none').length}회`:'아직 기록 없음'}</p>
+        </div>`;
+      }).join('')}</div>`;
+
+  return `<div class="dash"><div class="dash-inner">
+    <h2 class="dash-ttl">루틴 유지율</h2>
+    <p class="dash-sub">${msg}</p>
+    ${rows}
+    <div class="dash-note">
+      <p>✓ 완료 + 🩶 조금 함 모두 포함해서 계산해요</p>
+      <p>조금 하는 것도 충분히 의미 있어요</p>
+    </div>
+  </div></div>`;
+}
+
+// ─── 전역 노출 (onclick에서 사용) ────────────────────
+window.cycleRoutine   = cycleRoutine;
+window.toggleTodo     = toggleTodo;
+window.toggleEvent    = toggleEvent;
+window.deleteItem     = deleteItem;
+window.rescheduleDay  = rescheduleDay;
+window.moveEventByDay = moveEventByDay;
+window.selectDate     = selectDate;
+window.calNav         = calNav;
+window.dropOnDate     = dropOnDate;
+window.toggleDark     = toggleDark;
+window.toggleDashboard = toggleDashboard;
+Object.defineProperty(window, 'dragId', {
+  get(){ return dragId; }, set(v){ dragId=v; }
+});
+
+// ─── 시작 ────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
