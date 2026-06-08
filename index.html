@@ -288,11 +288,30 @@ async function loadAll() {
 const ROUTINE_KW = ['매일','매주','월수금','화목','주말','평일','매달','격일','루틴','반복'];
 const DAY_MAP = {'월요일':1,'화요일':2,'수요일':3,'목요일':4,'금요일':5,'토요일':6,'일요일':0};
 
+function cleanText(t) {
+  return t
+    .replace(/\d{1,2}월\s*\d{1,2}일/g, '')       // 6월 21일
+    .replace(/\d{1,2}시\s*\d{1,2}분/g, '')         // 18시 30분
+    .replace(/\d{1,2}시/g, '')                      // 18시
+    .replace(/오늘|내일|모레/g, '')
+    .replace(/월요일|화요일|수요일|목요일|금요일|토요일|일요일/g, '')
+    .replace(/매일|매주|월수금|화목|주말|평일|매달|격일|루틴|반복/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function parseInput(text) {
   const t = text.trim();
+
+  // 루틴 체크
   for (const kw of ROUTINE_KW) {
-    if (t.includes(kw)) return { id:genId(), type:'routine', text:t, status:'none', freq:kw, logs:[] };
+    if (t.includes(kw)) {
+      const name = cleanText(t) || t; // 이름 남기고 키워드 제거
+      return { id:genId(), type:'routine', text:name, status:'none', freq:kw, logs:[] };
+    }
   }
+
+  // 이벤트 체크
   let date = null;
   const md = t.match(/(\d{1,2})월\s*(\d{1,2})일/);
   if (md) date = `${TODAY.getFullYear()}-${md[1].padStart(2,'0')}-${md[2].padStart(2,'0')}`;
@@ -301,8 +320,10 @@ function parseInput(text) {
   if (date) {
     const tm = t.match(/(\d{1,2})시(?:\s*(\d{1,2})분)?/);
     const time = tm ? `${tm[1].padStart(2,'0')}:${tm[2]?tm[2].padStart(2,'0'):'00'}` : null;
-    return { id:genId(), type:'event', text:t, date, time, done:false };
+    const name = cleanText(t) || t;
+    return { id:genId(), type:'event', text:name, date, time, done:false };
   }
+
   return { id:genId(), type:'todo', text:t, done:false };
 }
 
@@ -582,7 +603,8 @@ function renderCalendar() {
             ${ev.time?`<span class="ev-time">${ev.time}</span>`:''}
           </div>
           <div class="ev-acts">
-            <button class="ev-post" onclick="moveEventByDay('${ev.id}',1)">+1일</button>
+            <button class="ev-post" onclick="moveEventByDay('${ev.id}',-1)" title="하루 당기기">-1일</button>
+            <button class="ev-post" onclick="moveEventByDay('${ev.id}',1)" title="하루 미루기">+1일</button>
             <button class="del-btn" onclick="deleteItem('${ev.id}')">×</button>
           </div>
         </div>`).join('')}</div>`;
